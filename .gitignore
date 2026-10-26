@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.DS_Store
+*.log
+sieve_output.txt
+report/*.aux
+report/*.log
+report/*.nav
+report/*.out
+report/*.snm
+report/*.toc
+report/*.vrb
