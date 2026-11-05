@@ -8,8 +8,7 @@
     python3 benchmark.py --n 10000000       # заданий N
     python3 benchmark.py --quick            # швидкий прогін для перевірки
 
-Для фінального звіту ті самі заміри потрібно повторити на PARCS-кластері
-(значення в таблиці будуть іншими — тут multiprocessing, там Pyro4 RPC).
+Використовує multiprocessing для паралельного запуску.
 """
 from __future__ import print_function
 import argparse
@@ -54,7 +53,7 @@ def run_benchmark(n_values, k_values):
     print("\n" + "=" * 72)
     print("Benchmark: Решето Ератосфена — послідовне vs паралельне")
     print("=" * 72)
-    print("Платформа: локальна (multiprocessing). На PARCS-кластері цифри будуть іншими.\n")
+    print("Платформа: multiprocessing на VM з N vCPU.\n")
 
     for n in n_values:
         print("─" * 72)
