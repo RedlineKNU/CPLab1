@@ -27,7 +27,6 @@ CPLab1/
 ├── sieve_serial.py          Послідовне решето (baseline)
 ├── sieve_parallel.py        Паралельний Solver для PARCS
 ├── sieve_input.txt          Вхідний файл (значення N)
-├── test_parallel_local.py   Локальна перевірка коректності з мок-воркерами
 ├── benchmark.py             Benchmark через multiprocessing (локальна оцінка)
 ├── report/                  LaTeX звіт з результатами
 └── README.md
@@ -38,9 +37,6 @@ CPLab1/
 ```bash
 # Серіальний варіант
 python3 sieve_serial.py 1000000
-
-# Перевірка коректності паралельного (з мок-воркерами)
-python3 test_parallel_local.py 1000000 4
 
 # Benchmark через multiprocessing
 python3 benchmark.py --quick
