@@ -106,9 +106,18 @@ class Solver(object):
 
         for chunk in mapped:
             value = chunk
-            while hasattr(value, "value"):
-                value = value.value
-            c = value[0]
+            # Розгортаємо FutureResult: пробуємо індексувати, якщо ні — беремо .value
+            for _ in range(5):
+                try:
+                    _ = value[0]
+                    break
+                except (TypeError, AttributeError):
+                    pass
+                if hasattr(value, "value"):
+                    value = value.value
+                else:
+                    break
+            c = int(value[0])
             first10 = list(value[1])
             last10 = list(value[2])
             total_count += c
