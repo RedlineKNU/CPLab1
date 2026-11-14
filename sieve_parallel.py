@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Паралельне решето Ератосфена (segmented sieve) для PARCS-Python.
-
-Запуск у PARCS через веб-інтерфейс майстра (http://MASTER_IP:8080):
-  - Script: цей файл
-  - Input: sieve_input.txt (містить одне число — N)
-  - Output: будь-який
+"""Решето Ератосфена (segmented sieve) для PARCS-Python.
 
 Алгоритм (segmented sieve):
   1. Майстер обчислює всі прості до sqrt(N) класичним решетом (мале, швидко).
@@ -82,7 +77,7 @@ class Solver(object):
         first10/last10 — перші/останні 10 простих (для фінального head/tail).
         """
         if high < low:
-            return (0, [], [])
+            return [0, [], []]
         size = high - low + 1
         is_prime = bytearray([1]) * size
         for p in small_primes:
@@ -101,7 +96,7 @@ class Solver(object):
                 last10.append(low + i)
                 if len(last10) > 10:
                     last10.pop(0)
-        return (count, first10, last10)
+        return [count, first10, last10]
 
     def myreduce(self, small_primes, mapped):
         """Складає count-и з усіх сегментів + формує глобальні first_10 / last_10."""
@@ -110,8 +105,12 @@ class Solver(object):
         all_last_candidates = list(small_primes)
 
         for chunk in mapped:
-            value = chunk.value if hasattr(chunk, "value") else chunk
-            c, first10, last10 = value
+            value = chunk
+            while hasattr(value, "value"):
+                value = value.value
+            c = value[0]
+            first10 = list(value[1])
+            last10 = list(value[2])
             total_count += c
             if len(all_first) < 10:
                 all_first.extend(first10)
