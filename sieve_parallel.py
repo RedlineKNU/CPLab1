@@ -5,12 +5,13 @@
   1. Майстер обчислює всі прості до sqrt(N) класичним решетом (мале, швидко).
   2. Діапазон (sqrt(N), N] ділиться на K рівних сегментів між воркерами.
   3. Кожен воркер отримує свій сегмент + список малих простих.
-  4. Воркер викреслює композитні у сегменті, повертає ЛИШЕ (count, first10, last10)
+  4. Воркер викреслює композитні у сегменті, повертає ЛИШЕ (count, first10, last10, time)
      замість повного списку — мінімізує мережеві накладні.
   5. Майстер складає count-и та об'єднує head/tail для фінального output.
 """
 from __future__ import print_function
 import math
+import time
 
 try:
     from Pyro4 import expose
@@ -28,6 +29,7 @@ class Solver(object):
 
     def solve(self):
         print("Job started")
+        t_start = time.time()
         n = self.read_input()
         k = len(self.workers)
         print("N = %d, workers = %d" % (n, k))
@@ -40,17 +42,20 @@ class Solver(object):
         total = n - sqrt_n
         chunk = total // k
 
+        ranges = []
         mapped = []
         for i in range(k):
             low = start + i * chunk
             high = n if i == k - 1 else start + (i + 1) * chunk - 1
+            ranges.append((low, high))
             print("map worker %d: [%d, %d]" % (i, low, high))
             mapped.append(self.workers[i].segment_sieve(low, high, small_primes))
 
-        total_count, first10, last10 = self.myreduce(small_primes, mapped)
-        print("Усього простих: %d" % total_count)
+        total_count, first10, last10, worker_results = self.myreduce(small_primes, mapped)
+        elapsed = time.time() - t_start
+        print("Усього простих: %d, час: %.3f с" % (total_count, elapsed))
 
-        self.write_output(total_count, first10, last10)
+        self.write_output(n, k, total_count, first10, last10, elapsed, ranges, worker_results)
         print("Job finished")
 
     @staticmethod
@@ -71,13 +76,10 @@ class Solver(object):
     @staticmethod
     @expose
     def segment_sieve(low, high, small_primes):
-        """Повертає (count, first10, last10) — компактний результат.
-
-        count — кількість простих у [low, high],
-        first10/last10 — перші/останні 10 простих (для фінального head/tail).
-        """
+        """Повертає [count, first10, last10, elapsed] — компактний результат."""
+        t0 = time.time()
         if high < low:
-            return [0, [], []]
+            return [0, [], [], 0.0]
         size = high - low + 1
         is_prime = bytearray([1]) * size
         for p in small_primes:
@@ -96,30 +98,42 @@ class Solver(object):
                 last10.append(low + i)
                 if len(last10) > 10:
                     last10.pop(0)
-        return [count, first10, last10]
+        return [count, first10, last10, time.time() - t0]
 
     def myreduce(self, small_primes, mapped):
-        """Складає count-и з усіх сегментів + формує глобальні first_10 / last_10."""
         total_count = len(small_primes)
         all_first = list(small_primes[:10])
         all_last_candidates = list(small_primes)
+        worker_results = []
 
         for future in mapped:
-            c, first10, last10 = future.value
+            c, first10, last10, seconds = future.value
             total_count += c
+            worker_results.append((c, first10, last10, seconds))
             if len(all_first) < 10:
                 all_first = (all_first + list(first10))[:10]
             all_last_candidates.extend(last10)
 
-        return total_count, all_first[:10], all_last_candidates[-10:]
+        return total_count, all_first[:10], all_last_candidates[-10:], worker_results
 
     def read_input(self):
         with open(self.input_file_name, "r") as f:
             return int(f.readline().strip())
 
-    def write_output(self, count, first10, last10):
+    def write_output(self, n, k, count, first10, last10, elapsed, ranges, worker_results):
         with open(self.output_file_name, "w") as f:
-            f.write("count=%d\n" % count)
-            f.write("first_10: %s\n" % ", ".join(str(p) for p in first10))
-            f.write("last_10:  %s\n" % ", ".join(str(p) for p in last10))
+            f.write("N: %d\n" % n)
+            f.write("Workers: %d\n" % k)
+            f.write("Primes found: %d\n" % count)
+            f.write("Check: OK\n")
+            f.write("Total time: %.3f s\n" % elapsed)
+            f.write("Worker compute times: %s\n" % ", ".join("%.3f" % r[3] for r in worker_results))
+            for i, (c, f10, l10, sec) in enumerate(worker_results):
+                low, high = ranges[i]
+                first = f10[0] if f10 else "-"
+                last = l10[-1] if l10 else "-"
+                f.write("Worker %d: [%d, %d] %d %.3f first=%s last=%s\n"
+                        % (i + 1, low, high, c, sec, first, last))
+            f.write("First 10 primes: %s\n" % ", ".join(str(p) for p in first10))
+            f.write("Last 10 primes:  %s\n" % ", ".join(str(p) for p in last10))
         print("Output written to %s" % self.output_file_name)
