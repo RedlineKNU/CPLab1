@@ -105,29 +105,28 @@ class Solver(object):
         all_last_candidates = list(small_primes)
 
         for chunk in mapped:
+            # Розгортаємо Pyro4 FutureResult до конкретного списку
             value = chunk
-            # Розгортаємо FutureResult: пробуємо індексувати, якщо ні — беремо .value
-            for _ in range(5):
+            for _ in range(10):
                 try:
                     _ = value[0]
                     break
-                except (TypeError, AttributeError):
+                except Exception:
                     pass
-                if hasattr(value, "value"):
+                try:
                     value = value.value
-                else:
+                except Exception:
                     break
+
             c = int(value[0])
             first10 = list(value[1])
             last10 = list(value[2])
             total_count += c
             if len(all_first) < 10:
-                all_first.extend(first10)
-                all_first = all_first[:10]
+                all_first = (all_first + first10)[:10]
             all_last_candidates.extend(last10)
 
-        last10 = all_last_candidates[-10:]
-        return total_count, all_first[:10], last10
+        return total_count, all_first[:10], all_last_candidates[-10:]
 
     def read_input(self):
         with open(self.input_file_name, "r") as f:
