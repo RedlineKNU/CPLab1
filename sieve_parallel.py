@@ -104,26 +104,11 @@ class Solver(object):
         all_first = list(small_primes[:10])
         all_last_candidates = list(small_primes)
 
-        for chunk in mapped:
-            # Розгортаємо Pyro4 FutureResult до конкретного списку
-            value = chunk
-            for _ in range(10):
-                try:
-                    _ = value[0]
-                    break
-                except Exception:
-                    pass
-                try:
-                    value = value.value
-                except Exception:
-                    break
-
-            c = int(value[0])
-            first10 = list(value[1])
-            last10 = list(value[2])
+        for future in mapped:
+            c, first10, last10 = future.value
             total_count += c
             if len(all_first) < 10:
-                all_first = (all_first + first10)[:10]
+                all_first = (all_first + list(first10))[:10]
             all_last_candidates.extend(last10)
 
         return total_count, all_first[:10], all_last_candidates[-10:]
